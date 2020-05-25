@@ -5,12 +5,6 @@ from moonshine import Moonshine
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-"""
-init
-revision
-merge
-"""
-
 
 @click.command()
 @click.option(
@@ -25,7 +19,7 @@ merge
     "--template",
     default="moonshine_generic",
     type=click.STRING,
-    help="Which Template to use. default=moonshine_generic",
+    help="Setup template for use with 'init'. default=moonshine_generic",
 )
 @click.option(
     "-p",
@@ -33,26 +27,19 @@ merge
     default=False,
     type=click.BOOL,
     is_flag=True,
-    help="Whether to include __init__.py in directory. default=False",
+    help="Write empty __init__.py files to the environment and version locations.",
 )
 def init(directory, template, package):
-    moonshine = Moonshine(config={"script_location": directory})
-    moonshine.init(template=template, package=package)
+    moonshine = Moonshine()
+    moonshine.init(directory=directory, template=template, package=package)
 
 
 @click.command()
 @click.option(
-    "-d",
-    "--directory",
-    default="moonshine_alembic",
-    type=click.STRING,
-    help="String path of the target directory. default=moonshine_alembic",
-)
-@click.option(
     "-m",
     "--message",
     type=click.STRING,
-    help="String path of the target directory",
+    help="Message string to use with 'revision'",
 )
 @click.option(
     "--head",
@@ -88,7 +75,6 @@ def init(directory, template, package):
     help='Optional list of "depends on" identifiers',
 )
 def revision(
-    directory,
     message=None,
     head="head",
     splice=False,
@@ -126,8 +112,7 @@ def revision(
 
     """
 
-    moonshine = Moonshine(config={"script_location": directory})
-    moonshine.revision(
+    Moonshine().revision(
         message=message,
         head=head,
         splice=splice,
@@ -138,6 +123,54 @@ def revision(
     )
 
 
+@click.command()
+@click.option(
+    "--revisions",
+    type=click.STRING,
+    help="String message to apply to the revision",
+)
+@click.option(
+    "-m",
+    "--message",
+    type=click.STRING,
+    help="String message to apply to the revision",
+)
+@click.option(
+    "--branch-label",
+    type=click.STRING,
+    help="String label name to apply to the new revision",
+)
+@click.option(
+    "--rev-id",
+    type=click.STRING,
+    help="Hardcoded revision identifier instead of generating a new one.",
+)
+def merge(revisions, message=None, branch_label=None, rev_id=None):
+    """Merge two revisions together.  Creates a new migration file.
+
+    .. versionadded:: 0.7.0
+
+
+    :param message: string message to apply to the revision
+
+    :param branch_label: string label name to apply to the new revision
+
+    :param rev_id: hardcoded revision identifier instead of generating a new
+     one.
+
+    .. seealso::
+
+        :ref:`branches`
+
+    """
+    Moonshine().merge(
+        revisions=revisions,
+        message=message,
+        branch_label=branch_label,
+        rev_id=rev_id,
+    )
+
+
 @click.group()
 def main(args=None):
     pass
@@ -145,6 +178,7 @@ def main(args=None):
 
 main.add_command(init)
 main.add_command(revision)
+main.add_command(merge)
 
 if __name__ == "__main__":
     main()

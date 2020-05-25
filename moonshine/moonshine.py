@@ -11,8 +11,10 @@ import os, sys, io
 from contextlib import contextmanager
 
 
-class Moonshine:
+ALEMBIC_CONFIG = os.environ.get("ALEMBIC_CONFIG", "alembic.ini")
 
+
+class Moonshine:
     """
     Only upgrade, downgrade and stamp use env.py
     Offline removed to return the sql instead of stdout
@@ -23,25 +25,6 @@ class Moonshine:
 
     AUTO-GENERATE NOT SUPPORTED
     """
-
-    __config_attributes = [
-        "script_location",
-        "file_template",
-        "timezone",
-        "truncate_slug_length",
-        "version_locations",
-        "output_encoding",
-        "attributes",
-    ]
-
-    __config_defaults = {
-        "script_location": "moonshine_alembic",
-        "file_template": "%%(year)d%%(month).2d%%(day).2d_%%(hour).2d%%(minute).2d%%(second).2d_%%(rev)s_%%(slug)s",
-        # "timezone": None,
-        # "truncate_slug_length": 40,
-        "version_locations": ["moonshine_alembic/versions"],
-        # "output_encoding": "utf-8",
-    }
 
     __config = None
     __engine = None
@@ -58,9 +41,10 @@ class Moonshine:
         }
     )
 
-    def __init__(self, config=None, engine=None, engine_config=None):
-        if config is not None:
-            self.config = config
+    def __init__(
+        self, config_file=ALEMBIC_CONFIG, engine=None, engine_config=None,
+    ):
+        self.config = Config(file_=config_file)
         if engine is not None:
             self.engine = engine
         elif engine_config is not None:
@@ -95,54 +79,6 @@ class Moonshine:
         # if not alembic_logger.hasHandlers():
         #     alembic_logger.setLevel(logging.INFO)
         #     alembic_logger.addHandler(console_handler)
-
-    @property
-    def __default_config(self) -> Config:
-        config = Config()
-        for k, v in self.__config_defaults.items():
-            if k == "version_locations":
-                config.set_main_option(k, " ".join(list(v)))
-            else:
-                config.set_main_option(k, v)
-        return config
-
-    @property
-    def config(self) -> Config:
-        if isinstance(self.__config, Config):
-            return self.__config
-        # set default_config
-        self.__config = self.__default_config
-        return self.__config
-
-    @config.setter
-    def config(self, value):
-        # load defaults
-        config = self.__default_config
-        if isinstance(value, Config):
-            # replace config
-            self.__config = value
-        elif isinstance(value, dict):
-            # Only allow prequalified attributes
-            for attribute in self.__config_attributes:
-                # load attribute values and overwite defaults
-                attribute_value = value.get(attribute)
-                if attribute_value is not None:
-                    if attribute == "attributes" and isinstance(
-                        attribute_value, dict
-                    ):
-                        for attr_k, attr_v in attribute_value.items():
-                            config.attributes[attr_k] = attr_v  # noqa
-                    elif attribute == "version_locations":
-                        config.set_main_option(
-                            attribute, " ".join(list(attribute_value))
-                        )
-                    else:
-                        config.set_main_option(attribute, attribute_value)
-        else:
-            raise TypeError(f"Unsupported config type : {type(value)}")
-
-        # set config
-        self.__config = config
 
     @property
     def script_directory(self) -> ScriptDirectory:
@@ -192,7 +128,7 @@ class Moonshine:
         package_dir = os.path.abspath(os.path.dirname(__file__))
         return os.path.join(package_dir, "templates")
 
-    def init(self, template="moonshine_generic", package=False):
+    def init(self, directory, template="moonshine_generic", package=False):
         """Initialize a new scripts directory.
 
         :param template: string name of the migration environment template to
@@ -205,7 +141,6 @@ class Moonshine:
 
 
         """
-        directory = self.config.get_main_option("script_location")
 
         if os.access(directory, os.F_OK) and os.listdir(directory):
             raise util.CommandError(
@@ -234,7 +169,15 @@ class Moonshine:
 
         for file_ in os.listdir(template_dir):
             file_path = os.path.join(template_dir, file_)
-            if os.path.isfile(file_path):
+            if file_ == "alembic.ini.mako":
+                config_file = os.path.abspath(self.config.config_file_name)
+                if os.access(config_file, os.F_OK):
+                    util.msg("File %s already exists, skipping" % config_file)
+                else:
+                    script._generate_template(
+                        file_path, config_file, script_location=directory
+                    )
+            elif os.path.isfile(file_path):
                 output_file = os.path.join(directory, file_)
                 script._copy_file(file_path, output_file)
 
@@ -245,6 +188,10 @@ class Moonshine:
             ]:
                 file_ = util.status("Adding %s" % path, open, path, "w")
                 file_.close()
+        util.msg(
+            "Please edit configuration/connection/logging "
+            "settings in %r before proceeding." % config_file
+        )
 
     def revision(
         self,
