@@ -7,7 +7,7 @@ Moonshine
         :target: https://pypi.python.org/pypi/moonshine
 
 .. image:: https://img.shields.io/travis/zodimo/moonshine.svg
-        :target: https://travis-ci.com/zodimo/moonshine
+        :target: https://travis-ci.org/github/zodimo/moonshine
 
 .. image:: https://readthedocs.org/projects/moonshine/badge/?version=latest
         :target: https://moonshine.readthedocs.io/en/latest/?badge=latest
