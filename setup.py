@@ -38,7 +38,7 @@ setup(
     long_description=readme + "\n\n" + history,
     include_package_data=True,
     keywords="moonshine",
-    name="moonshine",
+    name="alembic-moonshine",
     packages=find_packages(include=["moonshine", "moonshine.*"]),
     setup_requires=setup_requirements,
     test_suite="tests",
