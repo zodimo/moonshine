@@ -11,7 +11,7 @@ import os, sys, io
 from contextlib import contextmanager
 
 
-ALEMBIC_CONFIG = os.environ.get("ALEMBIC_CONFIG", "alembic.ini")
+ALEMBIC_CONFIG = os.environ.get("ALEMBIC_CONFIG", "moonshine.ini")
 
 
 class Moonshine:
@@ -169,7 +169,7 @@ class Moonshine:
 
         for file_ in os.listdir(template_dir):
             file_path = os.path.join(template_dir, file_)
-            if file_ == "alembic.ini.mako":
+            if file_ == "moonshine.ini.mako":
                 config_file = os.path.abspath(self.config.config_file_name)
                 if os.access(config_file, os.F_OK):
                     util.msg("File %s already exists, skipping" % config_file)
